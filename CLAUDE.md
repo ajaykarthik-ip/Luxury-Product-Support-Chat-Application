@@ -112,6 +112,26 @@ Run from `backend/`:
 - `npm test` — Jest unit tests
 - `npm run test:e2e` — end-to-end tests
 
+## Build Plan (Phases)
+
+Backend-first sequence we're following (frontend is a window into the backend, so it
+comes after the API works). Each phase is built to be **understood, not just shipped**.
+
+- **Phase 0 — Setup** ✅ — Nest CLI, `nest new backend`, choose Postgres + Prisma.
+- **Phase 1 — Data model / schema** ✅ — Prisma + 4 models. The foundation; the whole
+  20-conversation requirement is a schema problem solved by `@@unique([customerId, productId])`.
+- **Phase 2 — Auth** ✅ — JWT + Passport, two roles (CUSTOMER/AGENT), guards.
+- **Phase 3 — Products + Conversations + Messages (REST)** ✅ — CRUD + find-or-create.
+- **Phase 4 — Real-time WebSocket gateway** ✅ — Socket.IO, **one room per
+  conversation** for per-product session isolation. The core graded test.
+- **Phase 5 — Next.js frontend** ✅ — customer + agent views against the real API.
+- **Phase 6 — Deploy + deliverables** ◐ — EC2 live on IP ✅; HTTPS/domain, final
+  README + architecture write-up pending.
+
+Mental model (for explaining on a call): NestJS maps to Django — **module** ≈ Django
+app, **controller** ≈ view, **provider/service** ≈ business logic, decorators are
+labels, DI hands services to controllers automatically.
+
 ## Current Progress
 
 - [x] **Backend scaffolded** — fresh NestJS app in `backend/` (default `AppModule`/
@@ -144,6 +164,44 @@ Run from `backend/`:
       live `message:new`); customer product list → `/chat/[id]`; agent two-pane
       dashboard. *(User runs `npm run dev -- -p 3001` + manual end-to-end check.)*
       See `frontend/docs/01-frontend.md`.
-- [ ] AWS EC2 deployment.
+- [x] **AWS EC2 deployment (live on IP)** — app running at **http://15.206.17.249**.
+      EC2 t3.micro (Ubuntu 24.04, Mumbai `ap-south-1`), native PostgreSQL, PM2 +
+      nginx. See "Deployment (live)" below + `docs/DEPLOYMENT.md`.
+- [ ] Domain + HTTPS (`du.innoprojects.in` via GoDaddy A record + certbot) — pending.
+
+## Deployment (live)
+
+- **URL:** http://15.206.17.249 (Elastic IP). Domain `du.innoprojects.in` planned.
+- **Instance:** EC2 `t3.micro`, Ubuntu 24.04, region **ap-south-1 (Mumbai)**,
+  instance `i-09507701c4d4c0363`. SSH: `ssh -i du-key.pem ubuntu@15.206.17.249`.
+  2 GB swap added (needed for the Next build on 1 GB RAM).
+- **Database:** **native PostgreSQL** (NOT Docker on the server — leaner on 1 GB).
+  Runs on **port 5432**; db `luxury_chat`, user/pass `postgres`/`postgres`.
+  `backend/.env` `DATABASE_URL` uses `127.0.0.1:5432`. (Docker is only for local dev.)
+- **Processes (PM2):** `du-backend` → `dist/src/main.js` (port 3000); `du-frontend`
+  → `node_modules/.bin/next start -p 3001`. `pm2 save` done.
+  ⚠️ **Build output is `dist/src/main.js`** (not `dist/main.js`) because `prisma/seed.ts`
+  is included in the build, nesting output under `dist/src/`.
+- **nginx:** `/etc/nginx/sites-available/du` → `/` to :3001, `/api/` to :3000 (strips
+  `/api`), `/socket.io/` to :3000 (WebSocket upgrade). `server_name _`.
+- **Redeploy:** `cd ~/du && git pull`, then rebuild the changed app + `pm2 restart`.
+
+## TODO — next session
+1. **Agent UI refactor** — two parts:
+   (a) **Visual/UX refactor** of the agent dashboard — currently functional but plain;
+       improve the layout, thread list, and chat pane to match the polished "DU"
+       look of the customer side (it's graded on UI/UX).
+   (b) **Live updates** — dashboard does NOT update for new conversations / new
+       messages in unopened chats (must hit refresh ↻). Add real-time list updates +
+       unread indicator (agent socket listens across conversations).
+2. **Chat UI fix** — polish the chat window UX (per user; specifics TBD).
+3. **Mobile / responsive refactor** — make all pages responsive on mobile: catalog,
+   product page, **agent two-pane dashboard** (the sidebar + chat split needs a
+   mobile layout — e.g. list → tap → chat view), chat window, auth forms. UI/UX is
+   graded and may be tested on a phone.
+4. **Domain + HTTPS** — GoDaddy A record `du` → 15.206.17.249, then
+   `certbot --nginx`, then rebuild frontend with `NEXT_PUBLIC_API_URL=https://du.innoprojects.in/api`.
+5. **End-to-end test** — two browsers (customer + agent), incl. **mobile viewport**,
+   confirm live chat + callback.
 
 > **Keep this section updated as each phase completes.**

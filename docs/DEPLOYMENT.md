@@ -61,16 +61,23 @@ sudo npm install -g pm2
 ```bash
 git clone https://github.com/ajaykarthik-ip/Luxury-Product-Support-Chat-Application.git du
 cd du/backend
+```
 
-# Start Postgres
-docker compose up -d
+**Database: native PostgreSQL** (we run it directly on the box, NOT Docker — leaner
+on 1 GB RAM; Docker is only used for local dev). Native Postgres listens on the
+default port **5432**.
 
-# Backend env (use a STRONG secret in prod)
-cat > .env <<'EOF'
-DATABASE_URL="postgresql://postgres:postgres@127.0.0.1:5433/luxury_chat?schema=public"
-JWT_SECRET="REPLACE_WITH_A_LONG_RANDOM_STRING"
-JWT_EXPIRES_IN="1d"
-EOF
+```bash
+sudo apt-get install -y postgresql
+sudo -u postgres psql -c "ALTER USER postgres PASSWORD 'postgres';"
+sudo -u postgres psql -c "CREATE DATABASE luxury_chat;"
+
+# Backend env. Write each line separately to avoid heredoc/paste issues.
+cd ~/du/backend
+echo 'DATABASE_URL="postgresql://postgres:postgres@127.0.0.1:5432/luxury_chat?schema=public"' >> .env
+echo "JWT_SECRET=\"$(openssl rand -hex 32)\"" >> .env
+echo 'JWT_EXPIRES_IN="1d"' >> .env
+cat .env
 ```
 
 ## 5. Build + run the backend
@@ -82,7 +89,9 @@ npx prisma migrate deploy     # apply migrations (prod-safe, no prompts)
 npx prisma generate
 npm run seed                  # 9 demo products
 npm run build                 # → dist/
-pm2 start dist/main.js --name du-backend
+# NOTE: output is dist/src/main.js (not dist/main.js) because prisma/seed.ts is
+# included in the build, which nests compiled output under dist/src/.
+pm2 start dist/src/main.js --name du-backend
 ```
 
 ## 6. Build + run the frontend
