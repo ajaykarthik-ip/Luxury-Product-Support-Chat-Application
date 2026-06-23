@@ -77,6 +77,7 @@ export const api = {
     name: string;
     description?: string;
     imageUrl?: string;
+    category?: string;
   }) =>
     request<Product>('/products', {
       method: 'POST',
