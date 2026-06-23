@@ -1,0 +1,85 @@
+// Prisma schema for the Luxury Product Support Chat app.
+// Docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Two kinds of users in the system.
+enum Role {
+  CUSTOMER
+  AGENT
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String // bcrypt hash, never the plaintext
+  name      String
+  role      Role     @default(CUSTOMER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  // Conversations this user owns as the customer.
+  conversations Conversation[] @relation("CustomerConversations")
+  // Conversations this user is handling as the agent.
+  agentConversations Conversation[] @relation("AgentConversations")
+  // Messages this user has sent.
+  messages Message[]
+}
+
+model Product {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  imageUrl    String?
+  // Product type/category, e.g. "Timepieces", "Handmade Bags". Default keeps the
+  // column non-null for any pre-existing rows created before this field existed.
+  category    String   @default("Other")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // A product can be the subject of many conversations (one per customer).
+  conversations Conversation[]
+}
+
+model Conversation {
+  id         String   @id @default(uuid())
+  customerId String
+  productId  String
+  // The agent is assigned later, so this is optional at creation time.
+  agentId    String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  // Relations
+  customer User    @relation("CustomerConversations", fields: [customerId], references: [id])
+  agent    User?   @relation("AgentConversations", fields: [agentId], references: [id])
+  product  Product @relation(fields: [productId], references: [id])
+  messages Message[]
+
+  // CORE CONSTRAINT: exactly one conversation per (customer, product) pair.
+  @@unique([customerId, productId])
+}
+
+model Message {
+  id             String   @id @default(uuid())
+  conversationId String
+  senderId       String
+  content        String
+  createdAt      DateTime @default(now())
+
+  // Relations
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender       User         @relation(fields: [senderId], references: [id])
+
+  // Messages are almost always read newest-relative within a conversation,
+  // so index the FK + time for fast ordered lookups.
+  @@index([conversationId, createdAt])
+}
