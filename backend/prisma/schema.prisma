@@ -16,6 +16,15 @@ enum Role {
   AGENT
 }
 
+// Lifecycle of a support conversation (a "ticket").
+// OPEN   = active work — sits in an agent's queue.
+// CLOSED = resolved — drops out of the active views; reopens if the customer
+//          writes again (mirrors how real ticketing tools behave).
+enum ConversationStatus {
+  OPEN
+  CLOSED
+}
+
 model User {
   id        String   @id @default(uuid())
   email     String   @unique
@@ -55,6 +64,8 @@ model Conversation {
   productId  String
   // The agent is assigned later, so this is optional at creation time.
   agentId    String?
+  // Ticket lifecycle. New conversations start OPEN.
+  status     ConversationStatus @default(OPEN)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
@@ -66,6 +77,10 @@ model Conversation {
 
   // CORE CONSTRAINT: exactly one conversation per (customer, product) pair.
   @@unique([customerId, productId])
+  // The agent dashboard filters by (status, agent) and sorts by recent activity;
+  // these indexes keep the "Mine / Waiting / All / Closed" views fast at scale.
+  @@index([status, updatedAt])
+  @@index([agentId, status])
 }
 
 model Message {

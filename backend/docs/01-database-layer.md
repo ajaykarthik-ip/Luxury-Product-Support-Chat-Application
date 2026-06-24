@@ -50,6 +50,12 @@ fully-typed client.
   auth phase.
 - **`agentId` is optional (`String?`)** — a customer can open a conversation
   before any agent picks it up.
+- **`status` (`ConversationStatus` enum: `OPEN` / `CLOSED`)** — the ticket
+  lifecycle. New conversations start `OPEN`; resolving sets `CLOSED` (and it
+  drops out of the agent's active views); a customer messaging a closed ticket
+  reopens it. Two indexes — `@@index([status, updatedAt])` and
+  `@@index([agentId, status])` — keep the dashboard's filtered, sorted views
+  fast as the table grows.
 
 ### The core constraint
 

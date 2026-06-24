@@ -9,7 +9,7 @@ export default function LoginPage() {
       role="CUSTOMER"
       subtitle="Product Support"
       crossLinkHref="/agent/login"
-      crossLinkLabel="Support agent? Sign in to the agent portal →"
+      crossLinkLabel="Support agent? Sign in to the agent portal"
     />
   );
 }

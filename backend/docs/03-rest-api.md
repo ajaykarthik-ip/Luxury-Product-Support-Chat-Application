@@ -17,10 +17,15 @@ All routes require a JWT (global guard) unless noted. Roles in **bold** are enfo
 | `GET`  | `/products/:id` | **public** | One product |
 | `POST` | `/products` | **AGENT** | Add a product (our seed/admin path) |
 | `POST` | `/conversations` | **CUSTOMER** | Start/open chat for a product (find-or-create) |
-| `GET`  | `/conversations` | any logged-in | Agent → all; Customer → own |
+| `GET`  | `/conversations` | any logged-in | Agent → paginated `view` (`mine`/`waiting`/`all`/`closed`); Customer → own. Returns `{ items, total }` |
+| `GET`  | `/conversations/counts` | **AGENT** | Per-view counts for the dashboard tabs |
 | `GET`  | `/conversations/:id` | owner or agent | One conversation |
+| `PATCH`| `/conversations/:id/claim` | **AGENT** | Take over a chat |
+| `PATCH`| `/conversations/:id/release` | **AGENT** | Return a chat to the unassigned pool |
+| `PATCH`| `/conversations/:id/resolve` | **AGENT** | Close (resolve) the ticket |
+| `PATCH`| `/conversations/:id/reopen` | **AGENT** | Reopen a resolved ticket |
 | `GET`  | `/conversations/:id/messages` | owner or agent | Message history (oldest→newest) |
-| `POST` | `/conversations/:id/messages` | owner or agent | Send a message (REST; WS later) |
+| `POST` | `/conversations/:id/messages` | owner or agent | Send a message (REST; live via WS) |
 
 ---
 

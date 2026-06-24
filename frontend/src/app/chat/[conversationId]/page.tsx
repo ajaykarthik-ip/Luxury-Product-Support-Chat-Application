@@ -2,9 +2,11 @@
 
 import AppHeader from '@/components/AppHeader';
 import ChatWindow from '@/components/ChatWindow';
+import { ArrowLeft } from '@/components/icons';
 import { api } from '@/lib/api';
-import { useRequireAuth } from '@/lib/auth';
-import type { Conversation } from '@/lib/types';
+import { useAuth, useRequireAuth } from '@/lib/auth';
+import { getSocket } from '@/lib/socket';
+import type { Conversation, ConversationUpdate } from '@/lib/types';
 import Link from 'next/link';
 import { useParams, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -19,12 +21,31 @@ export default function ChatPage() {
   const initialText = useSearchParams().get('draft') ?? '';
 
   const { user, loading } = useRequireAuth();
+  const { token } = useAuth();
   const [conversation, setConversation] = useState<Conversation | null>(null);
 
   useEffect(() => {
     if (!user) return;
     api.getConversation(conversationId).then(setConversation).catch(() => {});
   }, [user, conversationId]);
+
+  // Live header: reflect the agent + status the moment they change.
+  useEffect(() => {
+    if (!token) return;
+    const socket = getSocket(token);
+    const onUpdated = (u: ConversationUpdate) => {
+      if (u.conversationId !== conversationId) return;
+      setConversation((prev) =>
+        prev
+          ? { ...prev, agentId: u.agentId, agent: u.agent, status: u.status }
+          : prev,
+      );
+    };
+    socket.on('conversation:updated', onUpdated);
+    return () => {
+      socket.off('conversation:updated', onUpdated);
+    };
+  }, [token, conversationId]);
 
   if (loading || !user) {
     return (
@@ -40,9 +61,9 @@ export default function ChatPage() {
         left={
           <Link
             href="/products"
-            className="rounded-full border border-stone-300 px-3 py-1 text-xs hover:bg-stone-100"
+            className="inline-flex items-center gap-1.5 rounded-full border border-stone-300 px-3 py-1 text-xs hover:bg-stone-100"
           >
-            ← Products
+            <ArrowLeft /> Products
           </Link>
         }
       />
@@ -52,12 +73,16 @@ export default function ChatPage() {
         </h1>
         <p className="text-xs text-neutral-500">
           {conversation?.agent
-            ? `With ${conversation.agent.name}`
+            ? `Chatting with ${conversation.agent.name}`
             : 'Waiting for an agent to join…'}
         </p>
       </div>
       <div className="flex-1 min-h-0">
-        <ChatWindow conversationId={conversationId} initialText={initialText} />
+        <ChatWindow
+          conversationId={conversationId}
+          initialText={initialText}
+          status={conversation?.status}
+        />
       </div>
     </>
   );

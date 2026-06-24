@@ -1,6 +1,7 @@
 'use client';
 
 import AppHeader from '@/components/AppHeader';
+import { ArrowLeft, ArrowRight } from '@/components/icons';
 import { api } from '@/lib/api';
 import type { Product } from '@/lib/types';
 import Link from 'next/link';
@@ -23,9 +24,9 @@ export default function CategoryPage() {
   const backLink = (
     <Link
       href="/products"
-      className="rounded-full border border-neutral-300 px-3 py-1 text-xs hover:bg-neutral-100"
+      className="inline-flex items-center gap-1.5 rounded-full border border-neutral-300 px-3 py-1 text-xs hover:bg-neutral-100"
     >
-      ← Collections
+      <ArrowLeft /> Collections
     </Link>
   );
 
@@ -71,8 +72,9 @@ export default function CategoryPage() {
               </div>
               <div className="mt-5">
                 <h2 className="font-serif text-2xl tracking-tight">{p.name}</h2>
-                <p className="mt-1 text-sm text-neutral-500 group-hover:text-neutral-800">
-                  View details →
+                <p className="mt-1 inline-flex items-center gap-1 text-sm text-neutral-500 group-hover:text-neutral-800">
+                  View details
+                  <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
                 </p>
               </div>
             </Link>

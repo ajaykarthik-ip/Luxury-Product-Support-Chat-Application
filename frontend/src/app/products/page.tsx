@@ -2,9 +2,7 @@
 
 import AppHeader from '@/components/AppHeader';
 import { api } from '@/lib/api';
-import { useAuth } from '@/lib/auth';
 import type { Product } from '@/lib/types';
-import { PENDING_KEY, useStartChat } from '@/lib/useStartChat';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
@@ -27,25 +25,15 @@ function groupByCategory(items: Product[]): [string, Product[]][] {
 
 /**
  * Level 1 of the support flow: choose a product category (Apple-Support style).
- * Public — no login to browse. Resumes any pending chat after login.
+ * Public — no login to browse. (A deferred chat is resumed by the login screen
+ * itself, which opens the conversation directly — no catalog flash in between.)
  */
 export default function ProductsPage() {
-  const { user } = useAuth();
-  const { start } = useStartChat();
   const [products, setProducts] = useState<Product[]>([]);
 
   useEffect(() => {
     api.getProducts().then(setProducts).catch(() => {});
   }, []);
-
-  useEffect(() => {
-    if (!user) return;
-    const pending = sessionStorage.getItem(PENDING_KEY);
-    if (pending) {
-      sessionStorage.removeItem(PENDING_KEY);
-      start(pending);
-    }
-  }, [user, start]);
 
   const categories = groupByCategory(products);
 

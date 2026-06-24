@@ -158,21 +158,26 @@ async function main() {
   check('agent cannot start a conversation → 403', agentDenied.status === 403, `got ${agentDenied.status}`);
 
   const custList = await api('GET', '/conversations', { token: customer.token });
+  // The list endpoint returns a paginated envelope: { items, total }.
   // Robust across repeated runs: assert the two we just created are present,
   // rather than an exact count (each run seeds fresh products → new conversations).
-  const custIds = Array.isArray(custList.body) ? custList.body.map((c) => c.id) : [];
+  const custItems = Array.isArray(custList.body?.items) ? custList.body.items : [];
+  const custIds = custItems.map((c) => c.id);
   check(
     'customer sees own conversations (both just-created present)',
     custIds.includes(conv1a.body.id) && custIds.includes(conv2.body.id),
   );
   check(
     'customer only sees their OWN conversations',
-    Array.isArray(custList.body) &&
-      custList.body.every((c) => c.customer?.id === customer.user.id),
+    custItems.length > 0 &&
+      custItems.every((c) => c.customer?.id === customer.user.id),
   );
 
   const agentList = await api('GET', '/conversations', { token: agent.token });
-  check('agent sees all conversations (≥2)', Array.isArray(agentList.body) && agentList.body.length >= 2);
+  check(
+    'agent sees all conversations (≥2)',
+    Array.isArray(agentList.body?.items) && agentList.body.items.length >= 2,
+  );
 
   const convId = conv1a.body.id;
   const crossAccess = await api('GET', `/conversations/${convId}`, { token: other.token });

@@ -1,10 +1,12 @@
 'use client';
 
+import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
+import { PENDING_KEY } from '@/lib/useStartChat';
 import type { Role } from '@/lib/types';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 /**
  * Self-contained auth screen, reused by the customer (/login) and agent
@@ -13,6 +15,11 @@ import { useEffect, useState } from 'react';
  *
  * Login is universal (the backend returns the user's real role); only the
  * REGISTER action is role-specific, fixed by the `role` prop of the page.
+ *
+ * Deferred-chat resume: if a logged-out visitor clicked "Chat" we stashed the
+ * product id. After auth we open that conversation *directly* (product → login →
+ * chat) — no catalog flash in between — and show a brief "starting…" state so the
+ * hand-off feels smooth rather than like a glitchy redirect.
  */
 export default function AuthForm({
   role,
@@ -34,44 +41,96 @@ export default function AuthForm({
   const [name, setName] = useState('');
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [resuming, setResuming] = useState(false);
+  // Did we arrive here mid-chat-intent? Drives the contextual banner.
+  const [pendingChat, setPendingChat] = useState(false);
+  // Navigate exactly once (login updates `user` → the effect fires; guard against
+  // a second invocation racing it back to the wrong place).
+  const navigated = useRef(false);
+
+  useEffect(() => {
+    setPendingChat(!!sessionStorage.getItem(PENDING_KEY));
+  }, []);
 
   const home = (r: Role) => (r === 'AGENT' ? '/agent' : '/products');
 
-  // Already signed in → go to the right home.
+  // After auth: resume the pending chat (customers) or go to the role home.
+  const finish = useCallback(
+    async (r: Role) => {
+      if (navigated.current) return;
+      navigated.current = true;
+      const pending =
+        r === 'CUSTOMER' ? sessionStorage.getItem(PENDING_KEY) : null;
+      if (pending) {
+        sessionStorage.removeItem(PENDING_KEY);
+        setResuming(true);
+        try {
+          const convo = await api.startConversation(pending);
+          router.replace(`/chat/${convo.id}`);
+          return;
+        } catch {
+          // If creating the conversation fails, fall back to the catalog.
+        }
+      }
+      router.replace(home(r));
+    },
+    [router],
+  );
+
+  // Already signed in (e.g. navigated here directly) → resume / go home.
   useEffect(() => {
-    if (!loading && user) router.replace(home(user.role));
-  }, [user, loading, router]);
+    if (!loading && user) finish(user.role);
+  }, [user, loading, finish]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError('');
     setSubmitting(true);
     try {
-      const u =
-        mode === 'login'
-          ? await login(email, password)
-          : await register({ email, password, name, role });
-      router.replace(home(u.role));
+      if (mode === 'login') await login(email, password);
+      else await register({ email, password, name, role });
+      // Navigation is handled by the effect below once `user` updates — keeps a
+      // single navigation path and the "Please wait…" state until we leave.
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong');
-    } finally {
       setSubmitting(false);
     }
+  }
+
+  // Smooth hand-off while we open the conversation.
+  if (resuming) {
+    return (
+      <main className="flex flex-1 items-center justify-center px-4">
+        <div className="flex flex-col items-center gap-4 text-center">
+          <span className="h-7 w-7 animate-spin rounded-full border-2 border-neutral-300 border-t-neutral-900" />
+          <p className="text-sm text-neutral-500">
+            Starting your conversation…
+          </p>
+        </div>
+      </main>
+    );
   }
 
   return (
     <main className="flex flex-1 items-center justify-center px-4">
       <div className="w-full max-w-sm">
         <div className="mb-8 text-center">
-          <h1 className="font-serif text-5xl font-semibold tracking-[0.35em] pl-2">
+          <h1 className="pl-2 font-serif text-5xl font-semibold tracking-[0.35em]">
             DU
           </h1>
           <p className="mt-2 text-sm tracking-wide text-neutral-500">
-            {subtitle}
+            {pendingChat ? 'Sign in to start your conversation' : subtitle}
           </p>
         </div>
 
         <div className="rounded-2xl border border-stone-200 bg-white p-6 shadow-sm">
+          {pendingChat && (
+            <p className="mb-5 rounded-xl bg-stone-50 px-4 py-3 text-center text-xs leading-relaxed text-neutral-500">
+              You&apos;re one step away — sign in and we&apos;ll take you straight
+              into your chat with a specialist.
+            </p>
+          )}
+
           {/* Mode toggle */}
           <div className="mb-6 flex rounded-full bg-stone-100 p-1 text-sm">
             {(['login', 'register'] as const).map((m) => (
@@ -128,7 +187,9 @@ export default function AuthForm({
               {submitting
                 ? 'Please wait…'
                 : mode === 'login'
-                  ? 'Sign in'
+                  ? pendingChat
+                    ? 'Sign in & start chat'
+                    : 'Sign in'
                   : 'Create account'}
             </button>
           </form>

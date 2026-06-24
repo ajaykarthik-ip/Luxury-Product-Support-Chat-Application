@@ -1,7 +1,10 @@
 import type {
+  AgentView,
   AuthResponse,
   Conversation,
+  ConversationCounts,
   Message,
+  Paginated,
   Product,
   Role,
 } from './types';
@@ -91,10 +94,36 @@ export const api = {
       body: JSON.stringify({ productId }),
     }),
 
-  getConversations: () => request<Conversation[]>('/conversations'),
+  // Agents pass a view + page window; customers call it with no args (their own).
+  getConversations: (params?: { view?: AgentView; skip?: number; take?: number }) => {
+    const qs = new URLSearchParams();
+    if (params?.view) qs.set('view', params.view);
+    if (params?.skip != null) qs.set('skip', String(params.skip));
+    if (params?.take != null) qs.set('take', String(params.take));
+    const suffix = qs.toString() ? `?${qs}` : '';
+    return request<Paginated<Conversation>>(`/conversations${suffix}`);
+  },
+
+  // Per-view counts for the dashboard tab badges (agent only).
+  getConversationCounts: () =>
+    request<ConversationCounts>('/conversations/counts'),
 
   getConversation: (id: string) =>
     request<Conversation>(`/conversations/${id}`),
+
+  // Agent routing fallback: take over a chat, or hand it back to the pool.
+  claimConversation: (id: string) =>
+    request<Conversation>(`/conversations/${id}/claim`, { method: 'PATCH' }),
+
+  releaseConversation: (id: string) =>
+    request<Conversation>(`/conversations/${id}/release`, { method: 'PATCH' }),
+
+  // Ticket lifecycle: resolve (close) or reopen.
+  resolveConversation: (id: string) =>
+    request<Conversation>(`/conversations/${id}/resolve`, { method: 'PATCH' }),
+
+  reopenConversation: (id: string) =>
+    request<Conversation>(`/conversations/${id}/reopen`, { method: 'PATCH' }),
 
   getMessages: (id: string) =>
     request<Message[]>(`/conversations/${id}/messages`),

@@ -61,7 +61,7 @@ src/
     product/[id]/page.tsx   # PUBLIC L3: support page (topics + Contact Options)
     chat/[conversationId]/  # CUSTOMER: single conversation view
     agent/login/page.tsx    # AGENT portal (register = AGENT)
-    agent/page.tsx          # AGENT: all threads (left) + live chat (right)
+    agent/page.tsx          # AGENT: ticketing desk — views + live chat
 ```
 
 ### Separate portals (UX decision)
@@ -86,7 +86,9 @@ just UX.)
 - **REST** (`lib/api.ts`) for things that aren't live: login/register, product list,
   starting a conversation, loading message **history**.
 - **Socket.IO** (`lib/socket.ts`) for live messaging. One shared connection; we
-  `conversation:join` a room per open chat and listen for `message:new`.
+  `conversation:join` a room per open chat and listen for `message:new`. The agent
+  dashboard additionally listens (over the same socket) for `message:activity`
+  (queue updates) and `conversation:updated` (ownership/status changes).
 
 ### The chat flow (ChatWindow)
 1. On open → `GET /conversations/:id/messages` for history.
@@ -119,18 +121,43 @@ paths funnel into that one per-product conversation.
 > UX rationale: browse-freely-then-sign-in-at-action mirrors e-commerce. Agents, by
 > contrast, must sign in first (their dashboard has no public content).
 
-### Agent journey
-`/agent/login` → `/agent` → left pane lists **all** conversations (the backend
-returns all for agents); click one → right pane opens the live `ChatWindow`. The
-`+ Product` button seeds products via `POST /products` (agent-only).
+### Agent journey (a ticketing desk)
+`/agent/login` → `/agent`. A **three-pane desk** (like Zendesk/Intercom):
+- **Queue** (left) — a **filtered, paginated** list, not one giant list: tabs switch
+  between **Mine / Waiting / All / Closed** (with live counts), and "Load more" pages
+  through results.
+- **Conversation** (center) — the live `ChatWindow`, width-capped for readability.
+- **Context** (right, wide screens) — customer + product details, ticket status/age, and
+  the lifecycle actions. On narrower screens the panel collapses and the actions move
+  into the chat header; on mobile it's single-pane (list → chat → back).
+
+The header carries an **Available / Away** toggle (gates auto-routing; Away = on a break)
+and a **capacity meter ("Handling N/5")**. **Resolve** is meaningful: the chat shows a
+"resolved" banner and the composer locks ("reopen to reply"); a customer's next message
+auto-reopens it.
+
+It's **fully live** over the shared socket — no refresh button:
+- `message:activity` bumps a thread to the top, refreshes its preview, and badges
+  unread; an unknown conversation id (a new/returning chat) is fetched and slotted in
+  if it belongs to the current view.
+- `conversation:updated` moves a thread between views as it's **auto-assigned**
+  (least-busy online agent, on a customer's message), **claimed/released**, or
+  **resolved/reopened**, and refreshes the tab counts.
+
+Each row shows ownership — **You / handled-by / Waiting** (and **Resolved** in the
+Closed view). The chat header carries the controls: **Claim** (waiting), **Release**
+(mine), **Resolve** (open), **Reopen** (closed). The open chat is held as its own
+state, so it stays put with live-updating controls even when an action moves it out of
+the active view.
 
 ---
 
 ## Known simplifications (honest notes)
-- **Agent thread list isn't live-updated** for conversations that aren't open — the
-  agent only joins the selected room. Refresh (↻) re-fetches. A fuller version would
-  join all rooms or use a per-agent notification channel. Noted as a future
-  enhancement (ties into the "scalability" discussion).
+- Agent presence (for auto-routing) is **in-memory** in the backend — fine for one
+  instance; multi-instance would move it to Redis. Noted as a future step.
+- "Pull from queue on agent login" isn't auto: a fresh agent gets *new* chats routed
+  in, and claims the backlog manually (deliberate — avoids dumping the whole queue on
+  whoever logs in first).
 - Auth guard is client-side for UX; the **backend** is the real authority.
 
 ### Checkpoint — done when:

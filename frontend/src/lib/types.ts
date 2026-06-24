@@ -20,22 +20,42 @@ export interface Product {
   createdAt: string;
 }
 
-interface PartyRef {
+export interface PartyRef {
   id: string;
   name: string;
   email: string;
 }
+
+export type ConversationStatus = 'OPEN' | 'CLOSED';
 
 export interface Conversation {
   id: string;
   customerId: string;
   productId: string;
   agentId?: string | null;
+  status?: ConversationStatus;
   createdAt: string;
   updatedAt: string;
   product?: Product;
   customer?: PartyRef;
   agent?: PartyRef | null;
+  // Most recent message in the thread (agent list preview). Null if none yet.
+  lastMessage?: Message | null;
+}
+
+// Agent dashboard views and their tab-count badges.
+export type AgentView = 'mine' | 'waiting' | 'all' | 'closed';
+export interface ConversationCounts {
+  mine: number;
+  waiting: number;
+  all: number;
+  closed: number;
+}
+
+// Paginated list response (agents) — customers get the same shape, unpaginated.
+export interface Paginated<T> {
+  items: T[];
+  total: number;
 }
 
 export interface Message {
@@ -50,4 +70,12 @@ export interface Message {
 export interface AuthResponse {
   accessToken: string;
   user: User;
+}
+
+// Payload of the `conversation:updated` socket event (ownership or status changed).
+export interface ConversationUpdate {
+  conversationId: string;
+  agentId: string | null;
+  agent: PartyRef | null;
+  status: ConversationStatus;
 }

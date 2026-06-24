@@ -1,7 +1,12 @@
 import { Injectable } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Role } from '@prisma/client';
 import { AuthUser } from '../auth/decorators/current-user.decorator';
 import { PrismaService } from '../prisma/prisma.service';
+import {
+  MESSAGE_CREATED,
+  MessageCreatedEvent,
+} from './events/message-created.event';
 
 /**
  * Owns the `message` table. Deliberately separate from ConversationsService so
@@ -10,7 +15,10 @@ import { PrismaService } from '../prisma/prisma.service';
  */
 @Injectable()
 export class MessagesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly events: EventEmitter2,
+  ) {}
 
   // Full history for a conversation, oldest first (natural reading order).
   // Uses the @@index([conversationId, createdAt]) we defined on Message.
@@ -45,6 +53,11 @@ export class MessagesService {
           : {}),
       },
     });
+
+    // Raise a domain event. The ChatGateway listens and does the socket
+    // broadcast — so REST sends (callback form) and WebSocket sends share one
+    // real-time path, and this service never has to know sockets exist.
+    this.events.emit(MESSAGE_CREATED, new MessageCreatedEvent(message));
 
     return message;
   }

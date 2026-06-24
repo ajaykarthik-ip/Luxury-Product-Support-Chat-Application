@@ -1,4 +1,10 @@
-import { IsNotEmpty, IsString, IsUUID, MaxLength } from 'class-validator';
+import {
+  IsBoolean,
+  IsNotEmpty,
+  IsString,
+  IsUUID,
+  MaxLength,
+} from 'class-validator';
 
 /** Payload for joining/leaving a conversation room. */
 export class JoinConversationDto {
@@ -17,4 +23,10 @@ export class SendMessageDto {
   @IsNotEmpty()
   @MaxLength(2000)
   content: string;
+}
+
+/** Payload for an agent toggling their Available/Away status. */
+export class AgentStatusDto {
+  @IsBoolean()
+  available: boolean;
 }

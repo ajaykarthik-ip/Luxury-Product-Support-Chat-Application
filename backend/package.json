@@ -20,7 +20,8 @@
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "test:api": "node scripts/test-api.mjs",
     "test:ws": "node scripts/test-ws.mjs",
-    "seed": "prisma db seed"
+    "seed": "prisma db seed",
+    "seed:demo": "ts-node prisma/seed-demo.ts"
   },
   "prisma": {
     "seed": "ts-node prisma/seed.ts"
@@ -29,6 +30,7 @@
     "@nestjs/common": "^11.0.1",
     "@nestjs/config": "^4.0.4",
     "@nestjs/core": "^11.0.1",
+    "@nestjs/event-emitter": "^3.0.1",
     "@nestjs/jwt": "^11.0.2",
     "@nestjs/passport": "^11.0.5",
     "@nestjs/platform-express": "^11.0.1",

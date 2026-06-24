@@ -6,6 +6,15 @@ node_modules/
 .env.local
 .env.*.local
 
+# Keys / certs (never commit private keys)
+*.pem
+*.key
+*.p12
+id_rsa*
+
+# Internal working notes (not part of the submission)
+CLAUDE.md
+
 # Build output
 dist/
 .next/

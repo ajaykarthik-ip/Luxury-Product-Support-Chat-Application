@@ -9,7 +9,7 @@ export default function AgentLoginPage() {
       role="AGENT"
       subtitle="Agent Portal"
       crossLinkHref="/login"
-      crossLinkLabel="Are you a customer? Go to the customer portal →"
+      crossLinkLabel="Are you a customer? Go to the customer portal"
     />
   );
 }
