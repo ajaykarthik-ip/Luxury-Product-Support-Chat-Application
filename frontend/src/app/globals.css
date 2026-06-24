@@ -16,3 +16,15 @@ body {
   background: var(--background);
   color: var(--foreground);
 }
+
+/* iOS Safari auto-zooms the page when you focus an input whose font-size is
+   below 16px. Forcing 16px on small/touch screens prevents that zoom; desktop
+   (>=768px, Tailwind's `md`) keeps the components' smaller text. Covers every
+   form field app-wide — chat composer, auth forms, the callback form. */
+@media (max-width: 767px) {
+  input,
+  textarea,
+  select {
+    font-size: 16px;
+  }
+}
