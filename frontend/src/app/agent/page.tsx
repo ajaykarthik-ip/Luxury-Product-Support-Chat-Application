@@ -455,8 +455,12 @@ export default function AgentPage() {
                     <button
                       key={c.id}
                       onClick={() => selectConversation(c)}
-                      className={`flex w-full items-start gap-3 border-b border-stone-100 px-4 py-3 text-left transition hover:bg-stone-50 ${
-                        isSelected ? 'bg-stone-100' : ''
+                      className={`flex w-full items-start gap-3 border-b border-stone-100 px-4 py-3 text-left transition ${
+                        isSelected
+                          ? 'bg-stone-100'
+                          : count > 0
+                            ? 'bg-amber-50 hover:bg-amber-100/70'
+                            : 'hover:bg-stone-50'
                       }`}
                     >
                       <span className="relative h-11 w-11 shrink-0 overflow-hidden rounded-lg bg-neutral-100">
@@ -470,13 +474,21 @@ export default function AgentPage() {
                         )}
                       </span>
                       <span className="min-w-0 flex-1">
-                        <span className="flex items-baseline justify-between gap-2">
-                          <span
-                            className={`truncate text-sm ${
-                              count > 0 ? 'font-semibold' : 'font-medium'
-                            }`}
-                          >
-                            {c.product?.name}
+                        <span className="flex items-center justify-between gap-2">
+                          <span className="flex min-w-0 items-center gap-1.5">
+                            {count > 0 && (
+                              <span
+                                aria-label="Unread"
+                                className="h-2 w-2 shrink-0 rounded-full bg-amber-500"
+                              />
+                            )}
+                            <span
+                              className={`truncate text-sm ${
+                                count > 0 ? 'font-semibold' : 'font-medium'
+                              }`}
+                            >
+                              {c.product?.name}
+                            </span>
                           </span>
                           <span className="shrink-0 text-[10px] text-neutral-400">
                             {timeAgo(c.lastMessage?.createdAt ?? c.updatedAt)}
