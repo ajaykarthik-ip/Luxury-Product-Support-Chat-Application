@@ -1,6 +1,7 @@
 'use client';
 
 import AppHeader from '@/components/AppHeader';
+import Eyebrow from '@/components/Eyebrow';
 import SignInPrompt from '@/components/SignInPrompt';
 import { ArrowLeft } from '@/components/icons';
 import { api } from '@/lib/api';
@@ -135,7 +136,7 @@ export default function ProductPage() {
       <AppHeader left={categoryLink} />
       <main className="mx-auto grid w-full max-w-6xl flex-1 grid-cols-1 gap-10 px-6 py-12 lg:grid-cols-2 lg:gap-16">
         {/* Image */}
-        <div className="aspect-[4/5] w-full overflow-hidden rounded-3xl bg-neutral-100">
+        <div className="aspect-[4/5] w-full overflow-hidden rounded-2xl bg-neutral-100 ring-1 ring-neutral-200/70">
           {product.imageUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
@@ -152,11 +153,7 @@ export default function ProductPage() {
 
         {/* Support panel */}
         <div className="flex flex-col justify-center">
-          {product.category && (
-            <span className="text-xs font-medium uppercase tracking-[0.2em] text-neutral-400">
-              {product.category}
-            </span>
-          )}
+          {product.category && <Eyebrow>{product.category}</Eyebrow>}
           <h1 className="mt-2 font-serif text-4xl tracking-tight sm:text-5xl">
             {product.name}
           </h1>
@@ -350,7 +347,7 @@ export default function ProductPage() {
               </div>
 
               <p className="mt-6 text-xs text-neutral-400">
-                Complimentary shipping · 2-year warranty · Lifetime servicing
+                Real-time specialists · 2-year aftercare · Lifetime servicing
               </p>
             </>
           )}
