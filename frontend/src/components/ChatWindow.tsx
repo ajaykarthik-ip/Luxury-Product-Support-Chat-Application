@@ -60,9 +60,18 @@ export default function ChatWindow({
   const [myRating, setMyRating] = useState<number | null>(rating);
   const [hoverStar, setHoverStar] = useState(0);
   const [reopening, setReopening] = useState(false);
+  // Track status internally so the composer locks/unlocks the INSTANT a
+  // `conversation:updated` arrives over the socket — not only when the parent
+  // re-renders with a new `status` prop. The prop seeds it (and covers refresh).
+  const [liveStatus, setLiveStatus] = useState<ConversationStatus>(status);
 
   const isAgent = user?.role === 'AGENT';
-  const resolved = status === 'CLOSED';
+  const resolved = liveStatus === 'CLOSED';
+
+  // Seed / re-sync internal status from the prop (initial load + refresh).
+  useEffect(() => {
+    setLiveStatus(status);
+  }, [status]);
 
   // Reset the resolved-card state when switching conversations (or when the
   // server reports a fresh rating).
@@ -113,12 +122,17 @@ export default function ChatWindow({
 
     const onUpdated = (u: ConversationUpdate) => {
       if (u.conversationId !== conversationId) return;
+      // Lock/unlock the composer live the moment the agent resolves/reopens —
+      // this is the same event that already draws the notice below, so the lock
+      // now applies without waiting on the parent to re-pass the status prop.
+      setLiveStatus(u.status);
+      if (u.status === 'CLOSED') setReopening(false);
       if (u.agent)
         addNotice(`joined-${u.agent.id}`, `${u.agent.name} joined the conversation`);
       if (u.status === 'CLOSED')
         addNotice(
           `closed-${new Date().toISOString()}`,
-          'This conversation was marked resolved',
+          'This conversation was resolved',
         );
     };
 
@@ -249,7 +263,7 @@ export default function ChatWindow({
             <div className="space-y-3 py-1 text-center">
               <p className="flex items-center justify-center gap-1.5 text-sm text-neutral-600">
                 <span className="text-green-600">✓</span>
-                This conversation was marked resolved.
+                This conversation was resolved.
               </p>
               {myRating ? (
                 <p className="text-xs text-neutral-400">
