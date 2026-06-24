@@ -1,3 +1,5 @@
+
+
 'use client';
 
 import { useAuth } from '@/lib/auth';
@@ -133,8 +135,10 @@ export default function ChatWindow({
 
   return (
     <div className="flex h-full flex-col bg-stone-50">
-      {/* Messages — full-width scroll area, content centered & width-capped */}
-      <div className="flex-1 overflow-y-auto px-4 py-6">
+      {/* Messages — full-width scroll area, content centered & width-capped.
+          `min-h-0` lets this flex child shrink so it scrolls instead of pushing
+          the composer off-screen. */}
+      <div className="min-h-0 flex-1 overflow-y-auto px-4 py-6">
         <div className="mx-auto max-w-2xl space-y-3">
           {loading ? (
             <p className="text-sm text-neutral-400">Loading conversation…</p>
@@ -195,8 +199,10 @@ export default function ChatWindow({
         </div>
       </div>
 
-      {/* Composer (or resolved state) */}
-      <div className="border-t border-stone-200 bg-white px-4 py-3">
+      {/* Composer (or resolved state) — `shrink-0` keeps it from collapsing;
+          the bottom padding respects the device safe area (home-bar gesture
+          pill / notch) so the input isn't tucked under it. */}
+      <div className="shrink-0 border-t border-stone-200 bg-white px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
         <div className="mx-auto max-w-2xl">
           {resolved && (
             <p className="mb-2 flex items-center justify-center gap-1.5 text-xs text-neutral-400">

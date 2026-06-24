@@ -85,7 +85,7 @@ export default function ProductsPage() {
         </div>
 
         {/* Value props */}
-        <section className="mt-24 grid grid-cols-1 gap-10 border-t border-neutral-200 pt-16 sm:grid-cols-3">
+        <section className="mx-auto mt-24 grid max-w-4xl grid-cols-1 gap-10 border-t border-neutral-200 pt-16 sm:grid-cols-3">
           {[
             {
               title: 'Complimentary Shipping',

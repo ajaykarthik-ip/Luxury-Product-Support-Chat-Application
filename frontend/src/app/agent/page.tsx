@@ -332,8 +332,9 @@ export default function AgentPage() {
   );
 
   return (
-    // Bounded to the viewport so the inner panels scroll — not the whole page.
-    <div className="flex h-[100dvh] flex-col">
+    // Bounded to the dynamic viewport (h-dvh) so the inner panels scroll — not
+    // the whole page — and the layout tracks the mobile keyboard / browser chrome.
+    <div className="flex h-dvh flex-col">
       <AppHeader />
       <div className="flex min-h-0 flex-1 overflow-hidden">
         {/* Threads sidebar */}

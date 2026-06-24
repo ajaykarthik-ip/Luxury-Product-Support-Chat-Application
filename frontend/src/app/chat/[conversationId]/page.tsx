@@ -56,7 +56,10 @@ export default function ChatPage() {
   }
 
   return (
-    <>
+    // Definite dynamic-viewport height (h-dvh) so the chat owns the full screen
+    // and the composer stays pinned to the bottom — `dvh` also shrinks when the
+    // mobile keyboard opens, so the input rides up with it.
+    <div className="flex h-dvh flex-col overflow-hidden">
       <AppHeader
         left={
           <Link
@@ -67,7 +70,7 @@ export default function ChatPage() {
           </Link>
         }
       />
-      <div className="border-b border-stone-200 bg-white px-6 py-3">
+      <div className="shrink-0 border-b border-stone-200 bg-white px-6 py-3">
         <h1 className="font-serif text-xl tracking-tight">
           {conversation?.product?.name ?? 'Conversation'}
         </h1>
@@ -77,13 +80,13 @@ export default function ChatPage() {
             : 'Waiting for an agent to join…'}
         </p>
       </div>
-      <div className="flex-1 min-h-0">
+      <div className="min-h-0 flex-1">
         <ChatWindow
           conversationId={conversationId}
           initialText={initialText}
           status={conversation?.status}
         />
       </div>
-    </>
+    </div>
   );
 }
