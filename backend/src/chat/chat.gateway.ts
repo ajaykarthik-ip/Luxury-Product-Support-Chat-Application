@@ -232,10 +232,12 @@ export class ChatGateway
       agent: conversation.agent,
       status: conversation.status,
     };
+    // Chain both rooms in ONE emit: Socket.IO delivers a single event to the
+    // union of the rooms, so an agent who is in BOTH the conversation room and
+    // the agents room receives it once — not twice (which previously rendered
+    // duplicate "resolved" notices).
     this.server
       .to(this.room(conversation.id))
-      .emit('conversation:updated', payload);
-    this.server
       .to(ChatGateway.AGENTS_ROOM)
       .emit('conversation:updated', payload);
 
