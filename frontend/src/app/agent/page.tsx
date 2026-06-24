@@ -150,6 +150,16 @@ export default function AgentPage() {
       // Re-assert our Available/Away choice (the server resets to available on a
       // fresh connection, so a reconnect while "Away" would otherwise drift).
       socket.emit('agent:status', { available: availableRef.current });
+      // Recover anything missed while the socket was down: refresh tab counts
+      // and reload the current view's first page.
+      scheduleCountsRefresh();
+      api
+        .getConversations({ view: viewRef.current, skip: 0, take: PAGE_SIZE })
+        .then((res) => {
+          setConversations(res.items);
+          setTotal(res.total);
+        })
+        .catch(() => {});
     };
     const onDisconnect = () => setLive(false);
 

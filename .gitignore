@@ -14,6 +14,7 @@ id_rsa*
 
 # Internal working notes (not part of the submission)
 CLAUDE.md
+backend/docs/05-interview-prep.md
 
 # Build output
 dist/

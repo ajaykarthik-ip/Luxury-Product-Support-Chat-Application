@@ -103,12 +103,27 @@ export default function ChatWindow({
         );
     };
 
-    socket.emit('conversation:join', { conversationId });
+    // (Re)join the room on every (re)connection. Mobile sockets drop when the
+    // tab is backgrounded / the screen locks; Socket.IO auto-reconnects, but the
+    // server only auto-rejoins *agents* (to the shared agents room) — anyone
+    // viewing a conversation must re-emit `conversation:join` or they silently
+    // stop receiving `message:new`. On reconnect we also reload history to
+    // recover messages sent while we were away (re-joining only delivers future
+    // ones), which is why a manual refresh used to be needed.
+    const join = () => socket.emit('conversation:join', { conversationId });
+    const resync = () => {
+      join();
+      api.getMessages(conversationId).then(setMessages).catch(() => {});
+    };
+
+    if (socket.connected) join();
+    socket.on('connect', resync);
     socket.on('message:new', onNew);
     socket.on('conversation:updated', onUpdated);
 
     return () => {
       socket.emit('conversation:leave', { conversationId });
+      socket.off('connect', resync);
       socket.off('message:new', onNew);
       socket.off('conversation:updated', onUpdated);
     };

@@ -41,8 +41,14 @@ export default function ChatPage() {
           : prev,
       );
     };
+    // On (re)connect, refetch so the header recovers any assignment/status
+    // change that fired while the socket was down (mobile backgrounding).
+    const refetch = () =>
+      api.getConversation(conversationId).then(setConversation).catch(() => {});
+    socket.on('connect', refetch);
     socket.on('conversation:updated', onUpdated);
     return () => {
+      socket.off('connect', refetch);
       socket.off('conversation:updated', onUpdated);
     };
   }, [token, conversationId]);
