@@ -1,6 +1,5 @@
 import { Injectable } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { Role } from '@prisma/client';
 import { AuthUser } from '../auth/decorators/current-user.decorator';
 import { PrismaService } from '../prisma/prisma.service';
 import {
@@ -42,16 +41,13 @@ export class MessagesService {
       include: { sender: { select: { id: true, name: true, role: true } } },
     });
 
-    // Bump the conversation's updatedAt so "active chats" sort by recent activity,
-    // and claim it for the agent who replies (helps the agent's thread list).
+    // Bump the conversation's updatedAt so "active chats" sort by recent activity.
+    // (Assignment-on-reply is handled by the gateway's `claimIfUnassigned`, which
+    // also broadcasts `conversation:updated` — keeping every socket emit in one
+    // place so the dashboard updates live instead of only after a refresh.)
     await this.prisma.conversation.update({
       where: { id: conversationId },
-      data: {
-        updatedAt: new Date(),
-        ...(sender.role === Role.AGENT
-          ? { agent: { connect: { id: sender.id } } }
-          : {}),
-      },
+      data: { updatedAt: new Date() },
     });
 
     // Raise a domain event. The ChatGateway listens and does the socket
