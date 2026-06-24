@@ -214,6 +214,15 @@ export class ChatGateway
         .catch((err) =>
           this.logger.error(`Routing failed: ${(err as Error).message}`),
         );
+    } else if (message.sender.role === Role.AGENT) {
+      // Reply = claim: an agent answering an unassigned chat takes ownership,
+      // which fires `conversation.changed` → the "X joined" line + moves it to
+      // their "Mine" queue.
+      this.conversations
+        .claimIfUnassigned(message.conversationId, message.senderId)
+        .catch((err) =>
+          this.logger.error(`Auto-claim failed: ${(err as Error).message}`),
+        );
     }
   }
 
@@ -231,6 +240,7 @@ export class ChatGateway
       agentId: conversation.agentId,
       agent: conversation.agent,
       status: conversation.status,
+      rating: conversation.rating,
     };
     // Chain both rooms in ONE emit: Socket.IO delivers a single event to the
     // union of the rooms, so an agent who is in BOTH the conversation room and

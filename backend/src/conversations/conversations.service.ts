@@ -243,15 +243,19 @@ export class ConversationsService {
     });
     if (!convo) return;
 
-    if (convo.status === ConversationStatus.CLOSED) {
+    // Customer wrote to a resolved ticket → reopen it and send it back to the
+    // queue (release the agent) so routing re-picks by current load.
+    const wasClosed = convo.status === ConversationStatus.CLOSED;
+    if (wasClosed) {
       await this.prisma.conversation.update({
         where: { id: conversationId },
-        data: { status: ConversationStatus.OPEN },
+        data: { status: ConversationStatus.OPEN, agentId: null },
       });
       await this.emitChanged(conversationId);
     }
 
-    if (!convo.agentId) {
+    // Assign if it's now unowned — either it was waiting, or we just released it.
+    if (wasClosed || !convo.agentId) {
       await this.autoAssignIfUnassigned(conversationId, availableAgentIds);
     }
   }
@@ -276,6 +280,25 @@ export class ConversationsService {
     });
     if (count === 0) return null; // lost the race — someone else assigned it
 
+    return this.emitChanged(conversationId);
+  }
+
+  /**
+   * An agent replying to an unassigned, open chat takes ownership — "reply =
+   * claim", the way real desks work. Race-safe via `where agentId: null`, so a
+   * concurrent customer auto-assign and this never double-own. No-op if the chat
+   * is already owned or closed.
+   */
+  async claimIfUnassigned(conversationId: string, agentId: string) {
+    const { count } = await this.prisma.conversation.updateMany({
+      where: {
+        id: conversationId,
+        agentId: null,
+        status: ConversationStatus.OPEN,
+      },
+      data: { agentId },
+    });
+    if (count === 0) return null;
     return this.emitChanged(conversationId);
   }
 
@@ -311,12 +334,33 @@ export class ConversationsService {
     return this.emitChanged(conversationId);
   }
 
-  /** Reopen a resolved ticket back into the active queue. */
+  /**
+   * Reopen a resolved ticket. It goes back to the *queue* — we release the agent
+   * (`agentId: null`) so auto-routing re-picks the least-busy available agent
+   * (possibly the same one). The gateway's `drainQueue` (fired by the resulting
+   * `conversation.changed` with no agent) handles the reassignment.
+   */
   async reopen(conversationId: string, agent: AuthUser) {
     await this.getAccessibleConversation(conversationId, agent);
     await this.prisma.conversation.update({
       where: { id: conversationId },
-      data: { status: ConversationStatus.OPEN },
+      data: { status: ConversationStatus.OPEN, agentId: null },
+    });
+    return this.emitChanged(conversationId);
+  }
+
+  /**
+   * Customer satisfaction (CSAT): the owning customer rates a resolved ticket
+   * 1–5. Agents pass the access check but must not rate their own tickets.
+   */
+  async rate(conversationId: string, user: AuthUser, rating: number) {
+    await this.getAccessibleConversation(conversationId, user);
+    if (user.role !== Role.CUSTOMER) {
+      throw new ForbiddenException('Only the customer can rate a conversation');
+    }
+    await this.prisma.conversation.update({
+      where: { id: conversationId },
+      data: { rating },
     });
     return this.emitChanged(conversationId);
   }

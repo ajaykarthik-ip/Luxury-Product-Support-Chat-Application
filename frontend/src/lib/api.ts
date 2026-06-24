@@ -125,6 +125,13 @@ export const api = {
   reopenConversation: (id: string) =>
     request<Conversation>(`/conversations/${id}/reopen`, { method: 'PATCH' }),
 
+  // Customer rates a resolved conversation (CSAT, 1–5).
+  rateConversation: (id: string, rating: number) =>
+    request<Conversation>(`/conversations/${id}/rating`, {
+      method: 'PATCH',
+      body: JSON.stringify({ rating }),
+    }),
+
   getMessages: (id: string) =>
     request<Message[]>(`/conversations/${id}/messages`),
 

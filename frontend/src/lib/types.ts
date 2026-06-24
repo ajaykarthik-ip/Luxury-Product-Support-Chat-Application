@@ -34,6 +34,8 @@ export interface Conversation {
   productId: string;
   agentId?: string | null;
   status?: ConversationStatus;
+  // Customer satisfaction score (1–5), null until the customer rates it.
+  rating?: number | null;
   createdAt: string;
   updatedAt: string;
   product?: Product;
@@ -78,4 +80,5 @@ export interface ConversationUpdate {
   agentId: string | null;
   agent: PartyRef | null;
   status: ConversationStatus;
+  rating?: number | null;
 }

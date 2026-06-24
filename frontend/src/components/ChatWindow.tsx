@@ -39,10 +39,12 @@ export default function ChatWindow({
   conversationId,
   initialText = '',
   status = 'OPEN',
+  rating = null,
 }: {
   conversationId: string;
   initialText?: string;
   status?: ConversationStatus;
+  rating?: number | null;
 }) {
   const { user, token } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
@@ -54,9 +56,26 @@ export default function ChatWindow({
   >([]);
   const bottomRef = useRef<HTMLDivElement>(null);
 
+  // Customer-side resolved card: CSAT rating + "reopen" intent.
+  const [myRating, setMyRating] = useState<number | null>(rating);
+  const [hoverStar, setHoverStar] = useState(0);
+  const [reopening, setReopening] = useState(false);
+
   const isAgent = user?.role === 'AGENT';
   const resolved = status === 'CLOSED';
-  const lockComposer = resolved && isAgent;
+
+  // Reset the resolved-card state when switching conversations (or when the
+  // server reports a fresh rating).
+  useEffect(() => {
+    setMyRating(rating);
+    setReopening(false);
+    setHoverStar(0);
+  }, [conversationId, rating]);
+
+  function submitRating(value: number) {
+    setMyRating(value);
+    api.rateConversation(conversationId, value).catch(() => {});
+  }
 
   // 1. Load history whenever the conversation changes.
   useEffect(() => {
@@ -219,20 +238,62 @@ export default function ChatWindow({
           pill / notch) so the input isn't tucked under it. */}
       <div className="shrink-0 border-t border-stone-200 bg-white px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
         <div className="mx-auto max-w-2xl">
-          {resolved && (
-            <p className="mb-2 flex items-center justify-center gap-1.5 text-xs text-neutral-400">
+          {resolved && isAgent ? (
+            // Agent: composer locked while the ticket is resolved.
+            <p className="flex items-center justify-center gap-1.5 py-1 text-xs text-neutral-400">
               <span className="text-green-600">✓</span>
-              {isAgent
-                ? 'This ticket is resolved. Reopen it to reply.'
-                : 'This conversation was resolved. Send a message to reopen it.'}
+              This ticket is resolved. Reopen it to reply.
             </p>
-          )}
-          {!lockComposer && (
+          ) : resolved && !reopening ? (
+            // Customer: resolved card — rate the support, or reopen for more help.
+            <div className="space-y-3 py-1 text-center">
+              <p className="flex items-center justify-center gap-1.5 text-sm text-neutral-600">
+                <span className="text-green-600">✓</span>
+                This conversation was marked resolved.
+              </p>
+              {myRating ? (
+                <p className="text-xs text-neutral-400">
+                  Thanks for your feedback — you rated this {myRating}/5.
+                </p>
+              ) : (
+                <div className="flex flex-col items-center gap-1">
+                  <span className="text-xs text-neutral-500">
+                    How was your support?
+                  </span>
+                  <div
+                    className="flex gap-1"
+                    onMouseLeave={() => setHoverStar(0)}
+                  >
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <button
+                        key={star}
+                        type="button"
+                        onMouseEnter={() => setHoverStar(star)}
+                        onClick={() => submitRating(star)}
+                        aria-label={`Rate ${star} of 5`}
+                        className="text-2xl leading-none text-amber-400 transition hover:scale-110"
+                      >
+                        {star <= hoverStar ? '★' : '☆'}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+              <button
+                type="button"
+                onClick={() => setReopening(true)}
+                className="text-xs font-medium text-neutral-600 underline underline-offset-2 hover:text-neutral-900"
+              >
+                Still need help? Reopen conversation
+              </button>
+            </div>
+          ) : (
+            // Open chat (or a customer who chose to reopen): normal composer.
             <form onSubmit={send} className="flex gap-2">
               <input
                 value={text}
                 onChange={(e) => setText(e.target.value)}
-                placeholder="Type a message…"
+                placeholder={reopening ? 'Reply to reopen…' : 'Type a message…'}
                 className="flex-1 rounded-full border border-stone-300 px-4 py-2 text-sm outline-none focus:border-neutral-900"
               />
               <button

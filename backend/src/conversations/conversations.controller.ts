@@ -8,6 +8,7 @@ import { MessagesService } from '../messages/messages.service';
 import { ConversationsService } from './conversations.service';
 import { CreateConversationDto } from './dto/create-conversation.dto';
 import { ListConversationsDto } from './dto/list-conversations.dto';
+import { RateConversationDto } from './dto/rate-conversation.dto';
 
 @Controller('conversations')
 export class ConversationsController {
@@ -79,6 +80,17 @@ export class ConversationsController {
   @Patch(':id/reopen')
   reopen(@CurrentUser() user: AuthUser, @Param('id') id: string) {
     return this.conversations.reopen(id, user);
+  }
+
+  // Customer rates their resolved ticket (CSAT, 1–5).
+  @Roles(Role.CUSTOMER)
+  @Patch(':id/rating')
+  rate(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @Body() dto: RateConversationDto,
+  ) {
+    return this.conversations.rate(id, user, dto.rating);
   }
 
   // --- Messages, nested under a conversation so access is checked in one place ---

@@ -37,7 +37,13 @@ export default function ChatPage() {
       if (u.conversationId !== conversationId) return;
       setConversation((prev) =>
         prev
-          ? { ...prev, agentId: u.agentId, agent: u.agent, status: u.status }
+          ? {
+              ...prev,
+              agentId: u.agentId,
+              agent: u.agent,
+              status: u.status,
+              rating: u.rating ?? null,
+            }
           : prev,
       );
     };
@@ -91,6 +97,7 @@ export default function ChatPage() {
           conversationId={conversationId}
           initialText={initialText}
           status={conversation?.status}
+          rating={conversation?.rating}
         />
       </div>
     </div>

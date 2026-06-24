@@ -66,6 +66,9 @@ model Conversation {
   agentId    String?
   // Ticket lifecycle. New conversations start OPEN.
   status     ConversationStatus @default(OPEN)
+  // Customer satisfaction (CSAT) score 1–5, set when the customer rates a
+  // resolved ticket. Null until rated.
+  rating     Int?
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 

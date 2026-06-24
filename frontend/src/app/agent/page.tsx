@@ -4,7 +4,7 @@ import AppHeader from '@/components/AppHeader';
 import ChatWindow from '@/components/ChatWindow';
 import { api } from '@/lib/api';
 import { useAuth, useRequireAuth } from '@/lib/auth';
-import { ArrowLeft } from '@/components/icons';
+import { ArrowLeft, Close } from '@/components/icons';
 import { getSocket } from '@/lib/socket';
 import type {
   AgentView,
@@ -221,7 +221,13 @@ export default function AgentPage() {
       // Keep the open chat's header controls correct after claim/resolve/etc.
       setSelected((prev) =>
         prev && prev.id === u.conversationId
-          ? { ...prev, agentId: u.agentId, agent: u.agent, status: u.status }
+          ? {
+              ...prev,
+              agentId: u.agentId,
+              agent: u.agent,
+              status: u.status,
+              rating: u.rating ?? null,
+            }
           : prev,
       );
 
@@ -230,7 +236,13 @@ export default function AgentPage() {
           belongs
             ? prev.map((c) =>
                 c.id === u.conversationId
-                  ? { ...c, agentId: u.agentId, agent: u.agent, status: u.status }
+                  ? {
+                      ...c,
+                      agentId: u.agentId,
+                      agent: u.agent,
+                      status: u.status,
+                      rating: u.rating ?? null,
+                    }
                   : c,
               )
             : prev.filter((c) => c.id !== u.conversationId),
@@ -407,28 +419,37 @@ export default function AgentPage() {
 
             {/* View tabs with live counts — share the width, no scrollbar */}
             <div className="mt-3 flex gap-1">
-              {VIEWS.map((v) => (
-                <button
-                  key={v.key}
-                  onClick={() => setView(v.key)}
-                  className={`flex flex-1 items-center justify-center gap-1.5 rounded-full px-2 py-1 text-xs transition ${
-                    view === v.key
-                      ? 'bg-neutral-900 text-stone-50'
-                      : 'text-neutral-600 hover:bg-stone-100'
-                  }`}
-                >
-                  {v.label}
-                  <span
-                    className={`rounded-full px-1 text-[10px] tabular-nums ${
+              {VIEWS.map((v) => {
+                // A small dot flags views that need attention: Waiting whenever
+                // chats are queued, Mine when any of my chats has unread.
+                const dot =
+                  (v.key === 'waiting' && counts.waiting > 0) ||
+                  (v.key === 'mine' &&
+                    Object.values(unread).some((n) => n > 0));
+                return (
+                  <button
+                    key={v.key}
+                    onClick={() => setView(v.key)}
+                    className={`flex flex-1 items-baseline justify-center gap-1.5 rounded-full px-2 py-1 text-xs transition ${
                       view === v.key
-                        ? 'bg-white/20 text-stone-100'
-                        : 'bg-stone-100 text-neutral-500'
+                        ? 'bg-neutral-900 text-stone-50'
+                        : 'text-neutral-600 hover:bg-stone-100'
                     }`}
                   >
-                    {counts[v.key]}
-                  </span>
-                </button>
-              ))}
+                    {dot && (
+                      <span className="h-1.5 w-1.5 shrink-0 self-center rounded-full bg-red-500" />
+                    )}
+                    {v.label}
+                    <span
+                      className={`text-[10px] tabular-nums ${
+                        view === v.key ? 'text-stone-400' : 'text-neutral-400'
+                      }`}
+                    >
+                      {counts[v.key]}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
           </div>
 
@@ -578,6 +599,19 @@ export default function AgentPage() {
                   {/* Actions live in the context panel on wide screens; show a
                       compact copy here when that panel is hidden. */}
                   <div className="xl:hidden">{lifecycleActions}</div>
+                  {/* Close the open conversation (return to the empty state).
+                      Mobile uses the back arrow above; this is its desktop twin. */}
+                  <button
+                    onClick={() => {
+                      setSelected(null);
+                      setSelectedId(null);
+                    }}
+                    className="hidden shrink-0 items-center rounded-full border border-stone-300 p-1.5 text-neutral-500 hover:bg-stone-100 md:flex"
+                    aria-label="Close conversation"
+                    title="Close conversation"
+                  >
+                    <Close className="h-4 w-4" />
+                  </button>
                 </div>
                 <div className="min-h-0 flex-1">
                   <ChatWindow
@@ -654,6 +688,20 @@ export default function AgentPage() {
                         : `${timeAgo(selected.createdAt)} ago`}
                     </span>
                   </div>
+                  {selected.rating != null && (
+                    <div className="mt-1.5 flex items-center justify-between text-sm">
+                      <span className="text-neutral-500">Rating</span>
+                      <span
+                        className="text-xs font-medium text-amber-500"
+                        title={`Customer rated ${selected.rating}/5`}
+                      >
+                        {'★'.repeat(selected.rating)}
+                        <span className="text-stone-300">
+                          {'★'.repeat(5 - selected.rating)}
+                        </span>
+                      </span>
+                    </div>
+                  )}
                 </div>
 
                 <div className="mt-auto border-t border-stone-100 pt-4">
