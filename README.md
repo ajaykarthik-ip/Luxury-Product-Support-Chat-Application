@@ -6,6 +6,12 @@ delivered live over WebSockets.
 
 Built with **Next.js** (frontend) and **NestJS** (backend), per the assignment brief.
 
+**Live demo:**
+- Customer portal — https://du.innoprojects.in/
+- Agent portal — https://du.innoprojects.in/agent
+
+You can register your own customer and agent accounts directly from each portal.
+
 ---
 
 ## Features
@@ -199,8 +205,21 @@ npm run test:ws     # WebSocket real-time test (run test:api first to seed users
 
 ---
 
+## Load testing
+
+The real-time layer was load-tested with [k6](https://k6.io/) against the live
+deployment. On a single free-tier **t3.micro**, the app sustained **1000 concurrent
+live connections** at **93 ms p95** round-trip (p50 61 ms), **99.9% handshake
+success**, and **zero connection errors**. Full method and numbers:
+[`loadtest/RESULTS.md`](loadtest/RESULTS.md).
+
+Because the backend is stateless with one room per conversation, capacity scales
+horizontally behind a load balancer + the Socket.IO Redis adapter.
+
+---
+
 ## Deployment (AWS EC2)
 
 See [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md).
 
-**Live URL:** http://15.206.17.249
+**Live URL:** https://du.innoprojects.in
