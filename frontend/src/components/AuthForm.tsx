@@ -16,21 +16,25 @@ import { useCallback, useEffect, useRef, useState } from 'react';
  * Login is universal (the backend returns the user's real role); only the
  * REGISTER action is role-specific, fixed by the `role` prop of the page.
  *
+ * `variant` themes the surface: 'agent' is the original light palette (the
+ * agent portal is unchanged); 'maison' is the warm-dark customer experience.
+ *
  * Deferred-chat resume: if a logged-out visitor clicked "Chat" we stashed the
  * product id. After auth we open that conversation *directly* (product → login →
- * chat) — no catalog flash in between — and show a brief "starting…" state so the
- * hand-off feels smooth rather than like a glitchy redirect.
+ * chat) — no catalog flash in between.
  */
 export default function AuthForm({
   role,
   subtitle,
   crossLinkHref,
   crossLinkLabel,
+  variant = 'agent',
 }: {
   role: Role;
   subtitle: string;
   crossLinkHref: string;
   crossLinkLabel: string;
+  variant?: 'agent' | 'maison';
 }) {
   const { user, loading, login, register } = useAuth();
   const router = useRouter();
@@ -97,54 +101,92 @@ export default function AuthForm({
     }
   }
 
+  const m = variant === 'maison';
+
+  // Surface tokens — agent keeps the exact original light styling.
+  const t = {
+    page: m
+      ? 'm-grain flex min-h-dvh flex-1 items-center justify-center bg-ink px-4 text-bone'
+      : 'flex flex-1 items-center justify-center px-4',
+    heading: m
+      ? 'font-display text-5xl font-semibold tracking-[0.34em] text-bone'
+      : 'pl-2 font-serif text-5xl font-semibold tracking-[0.35em]',
+    subtitle: m
+      ? 'mt-3 font-mono text-[11px] uppercase tracking-[0.24em] text-brass'
+      : 'mt-2 text-sm tracking-wide text-neutral-500',
+    card: m
+      ? 'rounded-2xl border border-brass/25 bg-umber p-6'
+      : 'rounded-2xl border border-stone-200 bg-white p-6 shadow-sm',
+    banner: m
+      ? 'mb-5 rounded-xl border border-bone/10 bg-ink px-4 py-3 text-center text-xs leading-relaxed text-taupe'
+      : 'mb-5 rounded-xl bg-stone-50 px-4 py-3 text-center text-xs leading-relaxed text-neutral-500',
+    toggleWrap: m
+      ? 'mb-6 flex rounded-full border border-bone/10 bg-ink p-1 text-sm'
+      : 'mb-6 flex rounded-full bg-stone-100 p-1 text-sm',
+    toggleOn: m ? 'bg-brass text-ink' : 'bg-neutral-900 text-stone-50',
+    toggleOff: m ? 'text-taupe' : 'text-neutral-600',
+    input: m
+      ? 'w-full rounded-lg border border-bone/20 bg-ink px-3 py-2 text-sm text-bone placeholder:text-taupe outline-none transition focus:border-brass'
+      : 'w-full rounded-lg border border-stone-300 px-3 py-2 text-sm outline-none focus:border-neutral-900',
+    submit: m
+      ? 'w-full rounded-lg bg-brass py-2.5 text-sm font-medium text-ink transition hover:bg-brass-bright disabled:opacity-50'
+      : 'w-full rounded-lg bg-neutral-900 py-2.5 text-sm font-medium text-stone-50 hover:bg-neutral-800 disabled:opacity-50',
+    crossLink: m
+      ? 'underline underline-offset-2 hover:text-bone'
+      : 'underline hover:text-neutral-800',
+    crossWrap: m
+      ? 'mt-4 text-center text-xs text-taupe'
+      : 'mt-4 text-center text-xs text-neutral-500',
+    spinner: m
+      ? 'h-7 w-7 animate-spin rounded-full border-2 border-bone/20 border-t-brass'
+      : 'h-7 w-7 animate-spin rounded-full border-2 border-neutral-300 border-t-neutral-900',
+    spinnerText: m ? 'text-sm text-taupe' : 'text-sm text-neutral-500',
+  };
+
   // Smooth hand-off while we open the conversation.
   if (resuming) {
     return (
-      <main className="flex flex-1 items-center justify-center px-4">
+      <main className={t.page}>
         <div className="flex flex-col items-center gap-4 text-center">
-          <span className="h-7 w-7 animate-spin rounded-full border-2 border-neutral-300 border-t-neutral-900" />
-          <p className="text-sm text-neutral-500">
-            Starting your conversation…
-          </p>
+          <span className={t.spinner} />
+          <p className={t.spinnerText}>Starting your conversation…</p>
         </div>
       </main>
     );
   }
 
   return (
-    <main className="flex flex-1 items-center justify-center px-4">
+    <main className={t.page}>
       <div className="w-full max-w-sm">
         <div className="mb-8 text-center">
-          <h1 className="pl-2 font-serif text-5xl font-semibold tracking-[0.35em]">
-            DU
-          </h1>
-          <p className="mt-2 text-sm tracking-wide text-neutral-500">
+          <h1 className={t.heading}>DU</h1>
+          <p className={t.subtitle}>
             {pendingChat ? 'Sign in to start your conversation' : subtitle}
           </p>
         </div>
 
-        <div className="rounded-2xl border border-stone-200 bg-white p-6 shadow-sm">
+        <div className={t.card}>
           {pendingChat && (
-            <p className="mb-5 rounded-xl bg-stone-50 px-4 py-3 text-center text-xs leading-relaxed text-neutral-500">
-              You&apos;re one step away — sign in and we&apos;ll take you straight
+            <p className={t.banner}>
+              You&apos;re one step away. Sign in and we&apos;ll take you straight
               into your chat with a specialist.
             </p>
           )}
 
           {/* Mode toggle */}
-          <div className="mb-6 flex rounded-full bg-stone-100 p-1 text-sm">
-            {(['login', 'register'] as const).map((m) => (
+          <div className={t.toggleWrap}>
+            {(['login', 'register'] as const).map((md) => (
               <button
-                key={m}
+                key={md}
                 onClick={() => {
-                  setMode(m);
+                  setMode(md);
                   setError('');
                 }}
                 className={`flex-1 rounded-full py-1.5 transition ${
-                  mode === m ? 'bg-neutral-900 text-stone-50' : 'text-neutral-600'
+                  mode === md ? t.toggleOn : t.toggleOff
                 }`}
               >
-                {m === 'login' ? 'Sign in' : 'Register'}
+                {md === 'login' ? 'Sign in' : 'Register'}
               </button>
             ))}
           </div>
@@ -156,7 +198,7 @@ export default function AuthForm({
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Full name"
                 required
-                className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm outline-none focus:border-neutral-900"
+                className={t.input}
               />
             )}
             <input
@@ -165,7 +207,7 @@ export default function AuthForm({
               onChange={(e) => setEmail(e.target.value)}
               placeholder="Email"
               required
-              className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm outline-none focus:border-neutral-900"
+              className={t.input}
             />
             <input
               type="password"
@@ -174,16 +216,12 @@ export default function AuthForm({
               placeholder="Password"
               required
               minLength={6}
-              className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm outline-none focus:border-neutral-900"
+              className={t.input}
             />
 
-            {error && <p className="text-sm text-red-600">{error}</p>}
+            {error && <p className="text-sm text-red-500">{error}</p>}
 
-            <button
-              type="submit"
-              disabled={submitting}
-              className="w-full rounded-lg bg-neutral-900 py-2.5 text-sm font-medium text-stone-50 hover:bg-neutral-800 disabled:opacity-50"
-            >
+            <button type="submit" disabled={submitting} className={t.submit}>
               {submitting
                 ? 'Please wait…'
                 : mode === 'login'
@@ -196,8 +234,8 @@ export default function AuthForm({
         </div>
 
         {/* Cross-link to the other portal */}
-        <p className="mt-4 text-center text-xs text-neutral-500">
-          <Link href={crossLinkHref} className="underline hover:text-neutral-800">
+        <p className={t.crossWrap}>
+          <Link href={crossLinkHref} className={t.crossLink}>
             {crossLinkLabel}
           </Link>
         </p>

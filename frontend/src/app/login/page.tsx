@@ -7,9 +7,10 @@ export default function LoginPage() {
   return (
     <AuthForm
       role="CUSTOMER"
-      subtitle="Product Support"
+      subtitle="Maison Concierge"
       crossLinkHref="/agent/login"
       crossLinkLabel="Support agent? Sign in to the agent portal"
+      variant="maison"
     />
   );
 }

@@ -73,7 +73,13 @@ export function setup() {
     if (res.status !== 200) continue;
     const body = res.json();
     const list = Array.isArray(body) ? body : body.items || [];
-    if (token && list.length) sessions.push({ token, convId: list[0].id });
+    // Spread load across ALL of this customer's conversations (one room each),
+    // not just list[0]. Otherwise every VU for a customer crams into a single
+    // room — an artificial ~100-per-room fan-out that doesn't reflect real usage
+    // (~2 people per conversation). More rooms = realistic fan-out under load.
+    if (token) {
+      for (const conv of list) sessions.push({ token, convId: conv.id });
+    }
   }
   if (sessions.length === 0) {
     throw new Error('No sessions — run `npm run seed:demo` first.');

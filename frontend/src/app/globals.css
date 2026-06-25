@@ -2,14 +2,31 @@
 
 :root {
   --background: #ffffff;
-  --foreground: #1d1d1f; /* Apple near-black */
+  --foreground: #1d1d1f; /* Apple near-black (agent side) */
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
-  --font-serif: var(--font-playfair);
+  --font-serif: var(--font-playfair); /* agent dashboard headings */
+
+  /* ---- Maison (customer) design tokens ---------------------------------- */
+  /* "After-Hours Atelier" — a warm, lacquered boutique-at-night palette.
+     Two restrained metallic/jewel accents (brass + oxblood), not one neon —
+     that's what keeps it from reading as generic dark-mode. */
+  --color-ink: #15110c; /* deepest espresso — primary canvas */
+  --color-umber: #211a13; /* raised surface — cards, panels */
+  --color-umber2: #2b2118; /* hover / elevated surface */
+  --color-brass: #c9a35b; /* primary metallic accent — lines, labels */
+  --color-brass-bright: #e2c184; /* hover brass */
+  --color-oxblood: #8c3b36; /* secondary jewel accent — used sparingly */
+  --color-bone: #ede4d4; /* primary text — warm off-white */
+  --color-taupe: #9d8e76; /* muted text, captions */
+  --color-sage: #8f9a6f; /* "available" indicator — muted, not neon green */
+
+  --font-display: var(--font-fraunces); /* maison display serif */
+  --font-mono: var(--font-geist-mono); /* maison technical labels */
 }
 
 body {
@@ -26,5 +43,70 @@ body {
   textarea,
   select {
     font-size: 16px;
+  }
+}
+
+/* ---- Maison utilities --------------------------------------------------- */
+
+/* Fraunces is a variable font with an optical-size axis; nudge it toward the
+   high-contrast display end and tighten spacing for large headings. */
+.font-display {
+  font-optical-sizing: auto;
+  font-variation-settings: "opsz" 144;
+}
+
+/* The "vitrine" — an arched-top frame, like a boutique display case or the
+   crystal of a watch. Elliptical top corners, gently squared base. */
+.m-arch {
+  border-top-left-radius: 50% 26%;
+  border-top-right-radius: 50% 26%;
+  border-bottom-left-radius: 0.85rem;
+  border-bottom-right-radius: 0.85rem;
+}
+
+/* Fine film-grain / paper tooth over the dark canvas — adds material depth so
+   large flat areas don't read as flat digital black. Very subtle. */
+.m-grain::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.045;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* A warm radial glow — the "low light" of the boutique behind the hero. */
+.m-glow {
+  background:
+    radial-gradient(
+      60% 50% at 50% 0%,
+      rgba(201, 163, 91, 0.1) 0%,
+      rgba(201, 163, 91, 0) 70%
+    );
+}
+
+/* Page-load reveal — a quiet rise. Staggered via inline animation-delay.
+   Respect reduced-motion: no transform, instant. */
+@keyframes m-rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.m-rise {
+  opacity: 0;
+  animation: m-rise 0.9s cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .m-rise {
+    opacity: 1;
+    animation: none;
   }
 }

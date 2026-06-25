@@ -1,7 +1,8 @@
 'use client';
 
-import AppHeader from '@/components/AppHeader';
 import Eyebrow from '@/components/Eyebrow';
+import MaisonHeader from '@/components/MaisonHeader';
+import MaisonShell from '@/components/MaisonShell';
 import SignInPrompt from '@/components/SignInPrompt';
 import { ArrowLeft } from '@/components/icons';
 import { api } from '@/lib/api';
@@ -12,7 +13,7 @@ import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
-// Canned common-issue topics (Apple-style). Static — no DB needed.
+// Canned common-issue topics. Static — no DB needed.
 const TOPICS = [
   'Warranty & Servicing',
   'Sizing & Fit',
@@ -55,9 +56,9 @@ export default function ProductPage() {
   const backLink = (
     <Link
       href="/products"
-      className="inline-flex items-center gap-1.5 rounded-full border border-neutral-300 px-3 py-1 text-xs hover:bg-neutral-100"
+      className="inline-flex items-center gap-1.5 rounded-full border border-bone/20 px-3 py-1 text-xs text-bone/80 transition hover:border-brass hover:text-brass"
     >
-      <ArrowLeft /> Collection
+      <ArrowLeft /> Collections
     </Link>
   );
 
@@ -86,7 +87,7 @@ export default function ProductPage() {
       ]
         .filter(Boolean)
         .join('\n');
-      const body = `📞 Callback requested${topic ? ` · ${topic}` : ''}\n${details}\n\n${text}`;
+      const body = `Callback requested${topic ? ` (${topic})` : ''}\n${details}\n\n${text}`;
       await api.sendMessage(convo.id, body);
       setDoneConvoId(convo.id);
       setMode('done');
@@ -97,23 +98,23 @@ export default function ProductPage() {
 
   if (missing) {
     return (
-      <>
-        <AppHeader left={backLink} />
+      <MaisonShell>
+        <MaisonHeader left={backLink} />
         <main className="flex flex-1 items-center justify-center">
-          <p className="text-sm text-neutral-400">Product not found.</p>
+          <p className="text-sm text-taupe">Piece not found.</p>
         </main>
-      </>
+      </MaisonShell>
     );
   }
 
   if (!product) {
     return (
-      <>
-        <AppHeader left={backLink} />
+      <MaisonShell>
+        <MaisonHeader left={backLink} />
         <main className="flex flex-1 items-center justify-center">
-          <p className="text-sm text-neutral-400">Loading…</p>
+          <p className="text-sm text-taupe">Loading…</p>
         </main>
-      </>
+      </MaisonShell>
     );
   }
 
@@ -125,69 +126,81 @@ export default function ProductPage() {
           ? `/category/${encodeURIComponent(product.category)}`
           : '/products'
       }
-      className="inline-flex items-center gap-1.5 rounded-full border border-neutral-300 px-3 py-1 text-xs hover:bg-neutral-100"
+      className="inline-flex items-center gap-1.5 rounded-full border border-bone/20 px-3 py-1 text-xs text-bone/80 transition hover:border-brass hover:text-brass"
     >
       <ArrowLeft /> {product.category ?? 'Collection'}
     </Link>
   );
 
+  const inputCls =
+    'w-full rounded-xl border border-bone/20 bg-ink px-3.5 py-2 text-sm text-bone placeholder:text-taupe outline-none transition focus:border-brass';
+
   return (
-    <>
-      <AppHeader left={categoryLink} />
-      <main className="mx-auto grid w-full max-w-6xl flex-1 grid-cols-1 gap-10 px-6 py-12 lg:grid-cols-2 lg:gap-16">
-        {/* Image */}
-        <div className="aspect-[4/5] w-full overflow-hidden rounded-2xl bg-neutral-100 ring-1 ring-neutral-200/70">
-          {product.imageUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={product.imageUrl}
-              alt={product.name}
-              className="h-full w-full object-cover"
+    <MaisonShell>
+      <MaisonHeader left={categoryLink} />
+      <main className="relative z-10 mx-auto grid w-full max-w-6xl flex-1 grid-cols-1 gap-10 px-6 py-14 lg:grid-cols-2 lg:items-center lg:gap-16">
+        {/* Image — presented as a vitrine. */}
+        <div className="w-full">
+          <div className="m-arch relative mx-auto aspect-[4/5] w-full max-w-md overflow-hidden border border-brass/25 bg-umber lg:max-w-none">
+            {product.imageUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={product.imageUrl}
+                alt={product.name}
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              <div className="flex h-full items-center justify-center text-taupe">
+                No image
+              </div>
+            )}
+            <div
+              aria-hidden
+              className="pointer-events-none absolute inset-0 bg-gradient-to-t from-ink/40 via-transparent to-ink/10"
             />
-          ) : (
-            <div className="flex h-full items-center justify-center text-neutral-300">
-              No image
-            </div>
-          )}
+          </div>
         </div>
 
         {/* Support panel */}
         <div className="flex flex-col justify-center">
           {product.category && <Eyebrow>{product.category}</Eyebrow>}
-          <h1 className="mt-2 font-serif text-4xl tracking-tight sm:text-5xl">
+          <h1 className="mt-3 font-display text-4xl tracking-tight text-bone sm:text-5xl">
             {product.name}
           </h1>
+          <p className="mt-3 font-mono text-[11px] uppercase tracking-[0.2em] text-taupe">
+            Aftercare ref. {product.id.slice(-6).toUpperCase()}
+          </p>
           {product.description && (
-            <p className="mt-4 text-base leading-relaxed text-neutral-500">
+            <p className="mt-5 text-[1.0625rem] leading-relaxed text-taupe">
               {product.description}
             </p>
           )}
 
           {mode === 'done' ? (
             // Confirmation after a callback request
-            <div className="mt-8 rounded-2xl border border-neutral-200 bg-neutral-50 p-6">
-              <h2 className="font-serif text-2xl tracking-tight">
+            <div className="m-arch mt-8 border border-brass/25 bg-umber p-7">
+              <h2 className="font-display text-2xl tracking-tight text-bone">
                 Request received
               </h2>
-              <p className="mt-2 text-sm leading-relaxed text-neutral-600">
+              <p className="mt-3 text-sm leading-relaxed text-taupe">
                 Thank you. A specialist will review your note about{' '}
-                <strong>{product.name}</strong> and follow up shortly. You can
-                also continue the conversation now.
+                <span className="text-bone">{product.name}</span> and follow up
+                shortly. You can also continue the conversation now.
               </p>
-              <div className="mt-5 flex gap-3">
+              <div className="mt-6 flex flex-wrap gap-3">
                 {doneConvoId && (
                   <Link
                     href={`/chat/${doneConvoId}`}
-                    className="rounded-full bg-neutral-900 px-6 py-2.5 text-sm font-medium text-white hover:bg-neutral-700"
+                    className="rounded-full bg-brass px-6 py-2.5 text-sm font-medium text-ink transition hover:bg-brass-bright"
                   >
                     Open conversation
                   </Link>
                 )}
                 <Link
                   href="/products"
-                  className="rounded-full border border-neutral-300 px-6 py-2.5 text-sm font-medium hover:bg-neutral-100"
+                  className="rounded-full border border-bone/20 px-6 py-2.5 text-sm font-medium text-bone/80 transition hover:border-brass hover:text-brass"
                 >
-                  Back to collection
+                  Back to collections
                 </Link>
               </div>
             </div>
@@ -195,30 +208,30 @@ export default function ProductPage() {
             <>
               {/* Topic chips */}
               <div className="mt-8">
-                <h2 className="text-sm font-medium text-neutral-700">
+                <h2 className="text-sm font-medium text-bone">
                   What can we help with?
                 </h2>
                 <div className="mt-3 flex flex-wrap gap-2">
-                  {TOPICS.map((t) => (
+                  {TOPICS.map((tp) => (
                     <button
-                      key={t}
-                      onClick={() => setTopic(topic === t ? null : t)}
+                      key={tp}
+                      onClick={() => setTopic(topic === tp ? null : tp)}
                       className={`rounded-full border px-4 py-1.5 text-sm transition ${
-                        topic === t
-                          ? 'border-neutral-900 bg-neutral-900 text-white'
-                          : 'border-neutral-300 text-neutral-700 hover:border-neutral-900'
+                        topic === tp
+                          ? 'border-brass bg-brass text-ink'
+                          : 'border-bone/20 text-bone/80 hover:border-brass hover:text-brass'
                       }`}
                     >
-                      {t}
+                      {tp}
                     </button>
                   ))}
                 </div>
               </div>
 
-              {/* Contact options (Apple-support style) */}
-              <div className="mt-8">
-                <h2 className="text-xs font-medium uppercase tracking-[0.18em] text-neutral-400">
-                  Contact Options
+              {/* Contact options */}
+              <div className="mt-9">
+                <h2 className="font-mono text-[10px] font-medium uppercase tracking-[0.3em] text-brass">
+                  How to reach us
                 </h2>
 
                 {mode === 'choose' && (
@@ -227,9 +240,9 @@ export default function ProductPage() {
                     <button
                       onClick={chatNow}
                       disabled={starting === product.id}
-                      className="group flex w-full items-center gap-4 rounded-2xl border border-neutral-200/80 bg-white px-5 py-4 text-left shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition-all duration-200 hover:-translate-y-0.5 hover:border-neutral-300 hover:shadow-[0_12px_28px_-12px_rgba(0,0,0,0.18)] disabled:opacity-50 disabled:hover:translate-y-0 disabled:hover:shadow-[0_1px_2px_rgba(0,0,0,0.04)]"
+                      className="group flex w-full items-center gap-4 rounded-2xl border border-brass/25 bg-umber px-5 py-4 text-left transition-all duration-200 hover:-translate-y-0.5 hover:border-brass/60 hover:bg-umber2 disabled:opacity-50 disabled:hover:translate-y-0"
                     >
-                      <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-neutral-900 text-white">
+                      <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-brass text-ink">
                         <svg
                           viewBox="0 0 24 24"
                           fill="none"
@@ -245,14 +258,14 @@ export default function ProductPage() {
                         </svg>
                       </span>
                       <span className="min-w-0 flex-1">
-                        <span className="block text-[15px] font-semibold tracking-tight text-neutral-900">
-                          Live Chat
+                        <span className="block text-[15px] font-semibold tracking-tight text-bone">
+                          Live chat
                         </span>
-                        <span className="mt-0.5 block text-[13px] leading-snug text-neutral-500">
-                          Start a real-time conversation with a DU specialist
+                        <span className="mt-0.5 block text-[13px] leading-snug text-taupe">
+                          Start a real-time conversation with a DU specialist.
                         </span>
-                        <span className="mt-1.5 flex items-center gap-1.5 text-[13px] font-medium text-green-600">
-                          <span className="h-2 w-2 rounded-full bg-green-500" />
+                        <span className="mt-2 flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-[0.16em] text-sage">
+                          <span className="h-1.5 w-1.5 rounded-full bg-sage" />
                           Available now
                         </span>
                       </span>
@@ -262,9 +275,9 @@ export default function ProductPage() {
                     {/* Call for Support */}
                     <button
                       onClick={() => setMode('callback')}
-                      className="group flex w-full items-center gap-4 rounded-2xl border border-neutral-200/80 bg-white px-5 py-4 text-left shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition-all duration-200 hover:-translate-y-0.5 hover:border-neutral-300 hover:shadow-[0_12px_28px_-12px_rgba(0,0,0,0.18)]"
+                      className="group flex w-full items-center gap-4 rounded-2xl border border-brass/25 bg-umber px-5 py-4 text-left transition-all duration-200 hover:-translate-y-0.5 hover:border-brass/60 hover:bg-umber2"
                     >
-                      <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-neutral-100 text-neutral-700">
+                      <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-bone/15 bg-umber2 text-brass">
                         <svg
                           viewBox="0 0 24 24"
                           fill="none"
@@ -280,11 +293,11 @@ export default function ProductPage() {
                         </svg>
                       </span>
                       <span className="min-w-0 flex-1">
-                        <span className="block text-[15px] font-semibold tracking-tight text-neutral-900">
-                          Call for Support
+                        <span className="block text-[15px] font-semibold tracking-tight text-bone">
+                          Request a callback
                         </span>
-                        <span className="mt-0.5 block text-[13px] leading-snug text-neutral-500">
-                          Describe your issue and a specialist will reach out
+                        <span className="mt-0.5 block text-[13px] leading-snug text-taupe">
+                          Describe your issue and a specialist will reach out.
                         </span>
                       </span>
                       <ChevronRight />
@@ -298,7 +311,7 @@ export default function ProductPage() {
                       value={cbName}
                       onChange={(e) => setCbName(e.target.value)}
                       placeholder="Full name"
-                      className="w-full rounded-xl border border-neutral-300 px-3.5 py-2 text-sm outline-none focus:border-neutral-900"
+                      className={inputCls}
                     />
                     <div className="grid grid-cols-2 gap-2.5">
                       <input
@@ -306,14 +319,14 @@ export default function ProductPage() {
                         value={cbEmail}
                         onChange={(e) => setCbEmail(e.target.value)}
                         placeholder="Email"
-                        className="w-full rounded-xl border border-neutral-300 px-3.5 py-2 text-sm outline-none focus:border-neutral-900"
+                        className={inputCls}
                       />
                       <input
                         type="tel"
                         value={cbPhone}
                         onChange={(e) => setCbPhone(e.target.value)}
                         placeholder="Phone number"
-                        className="w-full rounded-xl border border-neutral-300 px-3.5 py-2 text-sm outline-none focus:border-neutral-900"
+                        className={inputCls}
                       />
                     </div>
                     <textarea
@@ -325,19 +338,19 @@ export default function ProductPage() {
                           ? `Tell us about your ${topic.toLowerCase()} question…`
                           : 'Describe your issue…'
                       }
-                      className="w-full rounded-xl border border-neutral-300 px-3.5 py-2.5 text-sm outline-none focus:border-neutral-900"
+                      className={inputCls}
                     />
                     <div className="flex gap-3 pt-0.5">
                       <button
                         onClick={submitCallback}
                         disabled={submitting || !issue.trim() || !cbPhone.trim()}
-                        className="rounded-full bg-neutral-900 px-6 py-2.5 text-sm font-medium text-white hover:bg-neutral-700 disabled:opacity-50"
+                        className="rounded-full bg-brass px-6 py-2.5 text-sm font-medium text-ink transition hover:bg-brass-bright disabled:opacity-50"
                       >
                         {submitting ? 'Sending…' : 'Submit request'}
                       </button>
                       <button
                         onClick={() => setMode('choose')}
-                        className="rounded-full border border-neutral-300 px-6 py-2.5 text-sm font-medium hover:bg-neutral-100"
+                        className="rounded-full border border-bone/20 px-6 py-2.5 text-sm font-medium text-bone/80 transition hover:border-brass hover:text-brass"
                       >
                         Cancel
                       </button>
@@ -346,9 +359,11 @@ export default function ProductPage() {
                 )}
               </div>
 
-              <p className="mt-6 text-xs text-neutral-400">
-                Real-time specialists · 2-year aftercare · Lifetime servicing
-              </p>
+              <div className="mt-7 flex flex-wrap items-center gap-x-6 gap-y-1.5 font-mono text-[11px] uppercase tracking-[0.16em] text-taupe">
+                <span>Real-time specialists</span>
+                <span>Two-year aftercare</span>
+                <span>Lifetime servicing</span>
+              </div>
             </>
           )}
         </div>
@@ -360,7 +375,7 @@ export default function ProductPage() {
         onConfirm={confirmSignIn}
         onCancel={dismissSignIn}
       />
-    </>
+    </MaisonShell>
   );
 }
 
@@ -372,7 +387,7 @@ function ChevronRight() {
       fill="none"
       stroke="currentColor"
       strokeWidth={2}
-      className="h-4 w-4 shrink-0 text-neutral-300 transition-all duration-200 group-hover:translate-x-0.5 group-hover:text-neutral-500"
+      className="h-4 w-4 shrink-0 text-taupe transition-all duration-200 group-hover:translate-x-0.5 group-hover:text-brass"
     >
       <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
     </svg>

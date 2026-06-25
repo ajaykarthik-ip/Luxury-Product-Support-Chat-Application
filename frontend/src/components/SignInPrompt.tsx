@@ -50,11 +50,11 @@ export default function SignInPrompt({
         }`}
       />
       <div
-        className={`relative w-full max-w-xs rounded-2xl border border-stone-200 bg-white p-6 text-center shadow-xl transition-all duration-150 ${
+        className={`relative w-full max-w-xs rounded-2xl border border-brass/25 bg-umber p-6 text-center shadow-2xl transition-all duration-150 ${
           show ? 'scale-100 opacity-100' : 'scale-95 opacity-0'
         }`}
       >
-        <span className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-full bg-neutral-900 text-white">
+        <span className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-full bg-brass text-ink">
           <svg
             viewBox="0 0 24 24"
             fill="none"
@@ -69,21 +69,23 @@ export default function SignInPrompt({
             />
           </svg>
         </span>
-        <h2 className="font-serif text-xl tracking-tight">Sign in to continue</h2>
-        <p className="mt-2 text-sm leading-relaxed text-neutral-500">
+        <h2 className="font-display text-xl tracking-tight text-bone">
+          Sign in to continue
+        </h2>
+        <p className="mt-2 text-sm leading-relaxed text-taupe">
           Sign in to start chatting with a DU specialist
           {productName ? ` about the ${productName}` : ''}.
         </p>
         <div className="mt-5 flex flex-col gap-2">
           <button
             onClick={onConfirm}
-            className="w-full rounded-full bg-neutral-900 py-2.5 text-sm font-medium text-stone-50 hover:bg-neutral-800"
+            className="w-full rounded-full bg-brass py-2.5 text-sm font-medium text-ink transition hover:bg-brass-bright"
           >
             Sign in
           </button>
           <button
             onClick={onCancel}
-            className="w-full rounded-full py-2 text-sm text-neutral-500 hover:text-neutral-800"
+            className="w-full rounded-full py-2 text-sm text-taupe transition hover:text-bone"
           >
             Not now
           </button>

@@ -1,7 +1,7 @@
 'use client';
 
-import AppHeader from '@/components/AppHeader';
 import ChatWindow from '@/components/ChatWindow';
+import MaisonHeader from '@/components/MaisonHeader';
 import { ArrowLeft } from '@/components/icons';
 import { api } from '@/lib/api';
 import { useAuth, useRequireAuth } from '@/lib/auth';
@@ -61,36 +61,52 @@ export default function ChatPage() {
 
   if (loading || !user) {
     return (
-      <main className="flex flex-1 items-center justify-center">
-        <p className="text-sm text-neutral-400">Loading…</p>
+      <main className="flex h-dvh flex-1 items-center justify-center bg-ink">
+        <p className="text-sm text-taupe">Loading…</p>
       </main>
     );
   }
+
+  const resolved = conversation?.status === 'CLOSED';
 
   return (
     // Definite dynamic-viewport height (h-dvh) so the chat owns the full screen
     // and the composer stays pinned to the bottom — `dvh` also shrinks when the
     // mobile keyboard opens, so the input rides up with it.
-    <div className="flex h-dvh flex-col overflow-hidden">
-      <AppHeader
+    <div className="flex h-dvh flex-col overflow-hidden bg-ink text-bone">
+      <MaisonHeader
         left={
           <Link
             href="/products"
-            className="inline-flex items-center gap-1.5 rounded-full border border-stone-300 px-3 py-1 text-xs hover:bg-stone-100"
+            className="inline-flex items-center gap-1.5 rounded-full border border-bone/20 px-3 py-1 text-xs text-bone/80 transition hover:border-brass hover:text-brass"
           >
-            <ArrowLeft /> Products
+            <ArrowLeft /> Collections
           </Link>
         }
       />
-      <div className="shrink-0 border-b border-stone-200 bg-white px-6 py-3">
-        <h1 className="font-serif text-xl tracking-tight">
-          {conversation?.product?.name ?? 'Conversation'}
-        </h1>
-        <p className="text-xs text-neutral-500">
-          {conversation?.agent
-            ? `Chatting with ${conversation.agent.name}`
-            : 'Waiting for an agent to join…'}
-        </p>
+      <div className="shrink-0 border-b border-bone/10 bg-umber px-6 py-3.5">
+        <div className="mx-auto flex max-w-2xl items-center justify-between gap-3">
+          <div className="min-w-0">
+            <h1 className="truncate font-display text-xl tracking-tight text-bone">
+              {conversation?.product?.name ?? 'Conversation'}
+            </h1>
+            <p className="mt-0.5 flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.16em] text-taupe">
+              {conversation?.agent ? (
+                <>
+                  <span className="h-1.5 w-1.5 rounded-full bg-sage" />
+                  With {conversation.agent.name}
+                </>
+              ) : resolved ? (
+                'Conversation resolved'
+              ) : (
+                <>
+                  <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-brass motion-reduce:animate-none" />
+                  Connecting you to a specialist
+                </>
+              )}
+            </p>
+          </div>
+        </div>
       </div>
       <div className="min-h-0 flex-1">
         <ChatWindow
@@ -98,6 +114,7 @@ export default function ChatPage() {
           initialText={initialText}
           status={conversation?.status}
           rating={conversation?.rating}
+          variant="maison"
         />
       </div>
     </div>
